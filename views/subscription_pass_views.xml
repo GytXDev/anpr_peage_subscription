@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="view_subscription_pass_form" model="ir.ui.view">
+            <field name="name">subscription.pass.form</field>
+            <field name="model">anpr.subscription.pass</field>
+            <field name="arch" type="xml">
+                <form string="Abonnement Péage">
+                    <group>
+                        <field name="name"/>
+                        <field name="user_id"/>
+                        <field name="plate"/>
+                        <field name="balance"/>
+                        <field name="cost_per_passage"/>
+                    </group>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_subscription_pass_list" model="ir.ui.view">
+            <field name="name">subscription.pass.list</field>
+            <field name="model">anpr.subscription.pass</field>
+            <field name="arch" type="xml">
+                <list string="Abonnements Péage">
+                    <field name="name"/>
+                    <field name="user_id"/>
+                    <field name="plate"/>
+                    <field name="balance"/>
+                    <field name="cost_per_passage"/>
+                </list>
+            </field>
+        </record>
+    </data>
+</odoo>
