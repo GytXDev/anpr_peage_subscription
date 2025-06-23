@@ -7,8 +7,6 @@
             <field name="code">model.cron_sync_abonnements()</field>
             <field name="interval_type">minutes</field>
             <field name="interval_number">2</field>
-            <!-- <field name="numbercall">-1</field> --> <!-- déjà supprimé -->
-            <!-- <field name="doall">False</field> --> <!-- à supprimer aussi -->
             <field name="active">True</field>
         </record>
     </data>

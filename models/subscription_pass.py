@@ -16,6 +16,7 @@ class SubscriptionPass(models.Model):
         ('camion', 'Camion'),
         ('autres', 'Autres'),
     ], string="Type de véhicule", required=True)
+
     balance = fields.Float(string="Solde du compte", required=True, default=0.0)
     cost_per_passage = fields.Float(string="Coût par passage", required=True, default=500.0)
 
@@ -29,7 +30,7 @@ class SubscriptionPass(models.Model):
             if rec.balance >= rec.cost_per_passage:
                 rec.balance -= rec.cost_per_passage
                 if rec.is_remote:
-                    rec.sync_to_remote()
+                    rec.push_single_to_remote()
             else:
                 raise UserError("Solde insuffisant pour ce passage.")
 
@@ -63,13 +64,14 @@ class SubscriptionPass(models.Model):
         uid = self._authenticate_remote(conn)
         models = xmlrpc.client.ServerProxy(f"{conn['url'].rstrip('/')}/xmlrpc/2/object")
 
-        # Ajouter cost_per_passage dans les champs lus du serveur distant
         remote_records = models.execute_kw(conn['db'], uid, conn['password'],
-                                          'anpr.subscription.pass', 'search_read',
-                                          [[]], {'fields': ['id', 'name', 'plate', 'vehicle_type', 'balance', 'cost_per_passage']})
+                                        'anpr.subscription.pass', 'search_read',
+                                        [[]], {'fields': ['id', 'name', 'plate', 'vehicle_type', 'balance', 'cost_per_passage']})
 
         for rec in remote_records:
-            local = self.search([('plate', '=', rec['plate'])], limit=1)
+            # Correspondance sur remote_id
+            local = self.search([('remote_id', '=', rec['id'])], limit=1)
+
             vals = {
                 'name': rec['name'],
                 'plate': rec['plate'],
@@ -78,8 +80,10 @@ class SubscriptionPass(models.Model):
                 'cost_per_passage': rec.get('cost_per_passage', 500.0),
                 'remote_id': rec['id'],
                 'is_remote': True,
+                'sync_origin': 'remote',
                 'last_sync_date': fields.Datetime.now(),
             }
+
             if local:
                 local.write(vals)
             else:
@@ -105,6 +109,37 @@ class SubscriptionPass(models.Model):
                 'is_remote': True,
                 'last_sync_date': fields.Datetime.now(),
             })
+
+    def push_single_to_remote(self):
+        """Pousse uniquement cet enregistrement sur le serveur distant"""
+        conn = self._get_remote_connection()
+        uid = self._authenticate_remote(conn)
+        models = xmlrpc.client.ServerProxy(f"{conn['url'].rstrip('/')}/xmlrpc/2/object")
+
+        vals = {
+            'name': self.name,
+            'plate': self.plate,
+            'vehicle_type': self.vehicle_type,
+            'balance': self.balance,
+            'cost_per_passage': self.cost_per_passage,
+        }
+
+        if self.remote_id:
+            # Update distant
+            models.execute_kw(conn['db'], uid, conn['password'],
+                            'anpr.subscription.pass', 'write',
+                            [[self.remote_id], vals])
+        else:
+            # Create distant
+            remote_id = models.execute_kw(conn['db'], uid, conn['password'],
+                                        'anpr.subscription.pass', 'create', [vals])
+            self.write({
+                'remote_id': remote_id,
+                'is_remote': True,
+                'sync_origin': 'local',
+            })
+
+        self.write({'last_sync_date': fields.Datetime.now()})
 
     @api.model
     def cron_sync_abonnements(self):
