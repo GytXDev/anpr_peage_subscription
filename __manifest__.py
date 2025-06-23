@@ -9,6 +9,7 @@
         'security/security.xml',
         'security/ir.model.access.csv',
         'views/subscription_pass_views.xml',
+        'data/cron.xml',
     ],
     'installable': True,
     'application': True,
