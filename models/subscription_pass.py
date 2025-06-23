@@ -80,7 +80,6 @@ class SubscriptionPass(models.Model):
                 'cost_per_passage': rec.get('cost_per_passage', 500.0),
                 'remote_id': rec['id'],
                 'is_remote': True,
-                'sync_origin': 'remote',
                 'last_sync_date': fields.Datetime.now(),
             }
 
@@ -136,7 +135,6 @@ class SubscriptionPass(models.Model):
             self.write({
                 'remote_id': remote_id,
                 'is_remote': True,
-                'sync_origin': 'local',
             })
 
         self.write({'last_sync_date': fields.Datetime.now()})
